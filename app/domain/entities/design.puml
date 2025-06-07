@@ -1,0 +1,129 @@
+@startuml Paulet
+
+package "Frontend" {
+  class ReactUI {
+    -usuario: str
+    -clave: str
+    +enviar_consulta(): None
+    +mostrar_respuesta(): None
+  }
+}
+
+package "Backend" {
+  class ChatbotController {
+    +handle_user_input(mensaje: str): str
+  }
+
+  class ChatbotService {
+    +process_query(mensaje: str): str
+  }
+
+  class DecisionTree {
+    +get_root(): DecisionNode
+    +evaluate(input: str): DecisionNode
+  }
+
+  class DecisionNode {
+    -mensaje: str
+    -opciones: dict[str, DecisionNode]
+    -accion: str
+    -padre: DecisionNode
+    +get_mensaje(): str
+    +get_opciones(): dict
+    +get_accion(): str
+    +get_padre(): DecisionNode
+  }
+
+  abstract class WebScraperAdapter {
+    -usuario: str
+    -clave: str
+    -ciclo: str
+    +scrapping(): str <<abstract>>
+  }
+  
+  interface WebScrapping {
+    +scrapping(): str
+  }
+  
+  class ScrappingNotas {
+    -login(): None
+    -fetch_notas(): str
+    -parse_notas(html: str): str
+    +scrapping(): str
+  }
+
+  class ScrappingHorarios {
+    -login(): None
+    -fetch_horarios(): str
+    -parse_horarios(html: str): str
+    +scrapping(): str
+  }
+  
+  interface WebCache {
+    +get(usuario: str, ciclo: str): str
+    +set(usuario: str, ciclo: str, value: str, ttl: int): None
+  }
+
+  abstract class CacheBase {
+    +_build_key(usuario: str, ciclo: str): str
+    +get(usuario: str, ciclo: str): str <<abstract>>
+    +set(usuario: str, ciclo: str, value: str, ttl: int): None <<abstract>>
+  }
+
+  class NotasCache {
+    +get(usuario: str, ciclo: str): str
+    +set(usuario: str, ciclo: str, value: str, ttl: int): None
+  }
+
+  class HorariosCache {
+    +get(usuario: str, ciclo: str): str
+    +set(usuario: str, ciclo: str, value: str, ttl: int): None
+  }
+
+  class NotasRedisData {
+    -curso: str
+    -notas: dict[str, int]
+    -faltas_max: int
+    -faltas_actual: int
+  }
+  
+  class HorarioClase {
+    -curso: str
+    -clase: str
+    -tipo: str
+    -desde: str
+    -hasta: str
+    -sede: str
+  }
+
+  class HorariosRedisData {
+    -semana: str
+    -dias: dict[str, list[HorarioClase]]
+  }
+
+' Relaciones de herencia
+WebScraperAdapter <|-- ScrappingNotas
+WebScraperAdapter <|-- ScrappingHorarios
+CacheBase <|-- NotasCache
+CacheBase <|-- HorariosCache
+
+
+' Relaciones de interfaz
+WebScraperAdapter ..|> WebScrapping
+CacheBase ..|> WebCache
+
+
+' Relaciones de asociación
+ReactUI --> ChatbotController : solicitud REST
+ChatbotController --> ChatbotService : delega procesamiento
+ChatbotService --> DecisionTree : evalúa flujo conversacional
+DecisionTree --> DecisionNode : contiene nodos
+DecisionNode --> DecisionNode : referencia al padre (volver)
+ChatbotService --> WebScraperAdapter : ejecuta scraping según acción
+ChatbotService --> CacheBase : consulta / guarda
+NotasCache --> NotasRedisData : guarda como JSON
+HorariosCache --> HorariosRedisData : lista horarios semanales 
+HorariosRedisData --> HorarioClase : guarda como JSON
+}
+
+@enduml

@@ -1,0 +1,4 @@
+[tool.poetry]
+name = "paulet-assistant"
+version = "0.1.0"
+authors = "Henoc Elías Jorge, César Salirrosas y Miguel Centellas."
