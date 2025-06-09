@@ -1,0 +1,152 @@
+@startuml CleanArchitecturePaulet
+
+' === Dominio ===
+package "Dominio" {
+  class DecisionNode {
+    -mensaje: str
+    -opciones: dict
+    -accion: str
+    -padre: DecisionNode
+    +get_mensaje(): str
+    +get_opciones(): dict
+    +get_accion(): str
+    +get_padre(): DecisionNode
+  }
+  class DecisionTree {
+    -nodes: dict
+    -root: DecisionNode
+    +get_root(): DecisionNode
+  }
+  class Curso {
+    -nombre: str
+    -codigo: str
+  }
+  class Nota {
+    -valor: int
+  }
+  class Faltas {
+    -maximas: int
+    -actuales: int
+  }
+  class NotasDeCurso {
+    -curso: Curso
+    -notas: dict[str, Nota]
+    -faltas: Faltas
+  }
+  class Horario {
+    -curso: str
+    -clase: str
+    -tipo: str
+    -desde: str
+    -hasta: str
+    -sede: str
+  }
+  class HorariosData {
+    -semana: str
+    -dias: dict[str, list[Horario]]
+  }
+}
+
+' === Application ===
+package "Application" {
+  package "Casos de Uso" {
+    abstract class BaseConsultar {
+      -scraper: WebScraperInterface
+      -cache: CacheInterface
+      -usuario: str
+      -ciclo: str
+      +ejecutar_consulta(): str
+    }
+    class ConsultarNotasUseCase
+    class ConsultarHorariosUseCase
+  }
+  package "Interfaces" {
+    interface ChatbotInterface {
+      +procesar_consulta(mensaje: str): str
+    }
+    interface FlowManagerInterface {
+      +avanzar(mensaje: str)
+    }
+    interface CacheInterface {
+      +get(usuario: str, ciclo: str): str
+      +set(usuario: str, ciclo: str, value: str, ttl: int)
+    }
+    interface WebScraperInterface {
+      +scrap(): str
+    }
+  }
+  package "Servicios" {
+    class ChatbotService {
+      -flow_manager: FlowManagerInterface
+      -use_cases: dict
+      +procesar_consulta(mensaje: str): str
+    }
+    class FlowManagerService {
+      -tree: DecisionTree
+      -estado_actual: DecisionNode
+      +avanzar(mensaje: str)
+    }
+  }
+}
+
+' === Infraestructura ===
+package "Infraestructura" {
+  class RedisCacheImpl {
+    -redis_client
+    +get(usuario: str, ciclo: str): str
+    +set(usuario: str, ciclo: str, value: str, ttl: int)
+  }
+  class NotasWebScraperImpl {
+    -usuario: str
+    -clave: str
+    -ciclo: str
+    +scrap(): str
+  }
+  class HorariosWebScraperImpl {
+    -usuario: str
+    -clave: str
+    -ciclo: str
+    +scrap(): str
+  }
+  class ChatbotPresenter {
+    -service: ChatbotInterface
+    +manejar_entrada_de_usuario(mensaje: str): str
+  }
+}
+
+' === relaciones de herencia/implementacion ===
+BaseConsultar <|-- ConsultarNotasUseCase
+BaseConsultar <|-- ConsultarHorariosUseCase
+
+ChatbotService ..|> ChatbotInterface
+FlowManagerService ..|> FlowManagerInterface
+RedisCacheImpl ..|> CacheInterface
+NotasWebScraperImpl ..|> WebScraperInterface
+HorariosWebScraperImpl ..|> WebScraperInterface
+
+' === relaciones de uso/asociacion ===
+ChatbotService --> FlowManagerInterface : usa
+ChatbotService --> BaseConsultar : usa
+FlowManagerService --> DecisionTree : usa
+BaseConsultar --> WebScraperInterface : usa
+BaseConsultar --> CacheInterface : usa
+
+NotasWebScraperImpl --> Curso
+NotasWebScraperImpl --> Nota
+NotasWebScraperImpl --> Faltas
+NotasWebScraperImpl --> NotasDeCurso
+
+HorariosWebScraperImpl --> Horario
+HorariosWebScraperImpl --> HorariosData
+
+ChatbotPresenter --> ChatbotInterface : delega
+
+NotasDeCurso --> Curso
+NotasDeCurso --> Nota
+NotasDeCurso --> Faltas
+HorariosData --> Horario
+
+DecisionTree --> DecisionNode
+DecisionNode --> DecisionNode : opciones/padre
+
+@enduml

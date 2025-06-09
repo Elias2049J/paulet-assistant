@@ -1,0 +1,35 @@
+@startuml
+actor Usuario
+participant "FastAPI\n(Endpoint)" as API
+participant "ChatbotPresenter" as Presenter
+participant "ChatbotService" as Service
+participant "FlowManagerService" as FlowManager
+participant "BaseConsultar\n(UseCase)" as UseCase
+participant "WebScraperImpl" as Scraper
+participant "CacheImpl" as Cache
+
+Usuario -> API : POST /paulet/chat\n{ "message": msg }
+API -> Presenter : manejar_entrada_de_usuario(msg)
+Presenter -> Service : procesar_consulta(msg)
+Service -> FlowManager : avanzar(msg)
+FlowManager -> FlowManager : Actualiza estado\nDevuelve nodo actual
+Service -> Service : Lee acción del nodo
+alt Acción requiere consulta (ej: consultar_notas)
+    Service -> UseCase : ejecutar_consulta()
+    UseCase -> Cache : get(usuario, ciclo)
+    alt Hay datos en caché
+        Cache --> UseCase : datos
+        UseCase --> Service : "(desde caché) datos"
+    else No hay datos en caché
+        UseCase -> Scraper : scrap()
+        Scraper --> UseCase : datos_scrapeados
+        UseCase -> Cache : set(usuario, ciclo, datos_scrapeados, ttl)
+        UseCase --> Service : "(desde scraping) datos_scrapeados"
+    end
+    Service --> Presenter : respuesta
+else Solo mensaje de flujo
+    Service --> Presenter : nodo.get_mensaje()
+end
+Presenter --> API : respuesta
+API --> Usuario : { "respuesta": ... }
+@enduml
