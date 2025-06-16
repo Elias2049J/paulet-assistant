@@ -1,7 +1,6 @@
 # Punto de entrada principal de la aplicacion
 # Configura el flujo de la app: rutas, casos de uso, scrapers, caché y servicios.
 import os
-from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from app.infrastructure.routes.chatbot_routes import get_router
@@ -18,8 +17,8 @@ from app.infrastructure.config.redis_client import redis_client
 from app.infrastructure.config.cors_config import configure_cors
 
 # Configuración de la app y CORS
-application = FastAPI()
-configure_cors(application)
+app = FastAPI()
+configure_cors(app)
 
 # Datos fijos para el usuario de pruebas
 usuario = os.getenv("USUARIO")
@@ -27,29 +26,16 @@ clave = os.getenv("PASSWORD")
 ciclo = "2025-1"
 
 # Variables globales para dependencias
-redis_cache = None
-use_cases = None
-chatbot_service = None
-controller = None
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    global redis_cache, use_cases, chatbot_service, controller
-    redis_client_instance = await redis_client()
-    redis_cache = RedisCacheImpl(redis_client_instance)
-    use_cases = {
-        "consultar_notas": ConsultarNotasUseCase(
-            NotasPlaywrightScraperImpl(usuario, clave, ciclo), redis_cache, usuario, ciclo
-        ),
-        "consultar_horarios": ConsultarHorariosUseCase(
-            HorariosWebScraperImpl(usuario, clave, ciclo), redis_cache, usuario, ciclo
-        )
-    }
-    flow_manager = FlowManagerService(DecisionTree())
-    chatbot_service = ChatbotService(flow_manager, use_cases)
-    controller = ChatbotPresenter(chatbot_service)
-    app.include_router(get_router(controller))
-    yield
-
-application = FastAPI(lifespan=lifespan)
+redis_cache = RedisCacheImpl(redis_client())
+use_cases = {
+    "consultar_notas": ConsultarNotasUseCase(
+        NotasPlaywrightScraperImpl(usuario, clave, ciclo), redis_cache, usuario, ciclo
+    ),
+    "consultar_horarios": ConsultarHorariosUseCase(
+        HorariosWebScraperImpl(usuario, clave, ciclo), redis_cache, usuario, ciclo
+    )
+}
+flow_manager = FlowManagerService(DecisionTree())
+chatbot_service = ChatbotService(flow_manager, use_cases)
+controller = ChatbotPresenter(chatbot_service)
+app.include_router(get_router(controller))

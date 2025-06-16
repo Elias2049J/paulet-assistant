@@ -8,14 +8,14 @@ class ChatbotService(ChatbotInterface):
         self.flow_manager = flow_manager
         self.use_cases = use_cases
 
-    async def procesar_consulta(self, mensaje: str) -> str:
+    def procesar_consulta(self, mensaje: str) -> str:
         # Usa los datos del usuario ya definidos en main.py a través de los use_cases y scrapers
         estado = self.flow_manager.avanzar(mensaje)
         accion = estado.get_accion()
         if accion and accion in self.use_cases:
             if accion == "consultar_notas":
-                notas, ciclo, desde_cache = await self.use_cases[accion].ejecutar_consulta()
+                notas, ciclo, desde_cache = self.use_cases[accion].ejecutar_consulta()
                 return NotasPresenter.formatear_respuesta(notas, ciclo, desde_cache)
             else:
-                return await self.use_cases[accion].ejecutar_consulta()
+                return self.use_cases[accion].ejecutar_consulta()
         return estado.get_mensaje()

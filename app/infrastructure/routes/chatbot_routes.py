@@ -18,9 +18,7 @@ class ChatRequest(BaseModel):
 # Recibe el presentador y define el endpoint POST '/paulet/chat'.
 def get_router(presenter):
     @router.post("/paulet/chat")
-    async def conversar(request: ChatRequest):
-        # Delegamos el procesamiento del mensaje al presentador.
-        respuesta = await presenter.manejar_entrada_de_usuario(request.message)
+    def conversar(request: ChatRequest):
+        respuesta = presenter.manejar_entrada_de_usuario(request.message)
         return {"respuesta": respuesta}
-
     return router

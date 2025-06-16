@@ -1,6 +1,8 @@
 # Caso de uso base para consultas (notas, horarios, etc.) en Clean Architecture.
 # Gestiona la obtención de datos desde caché o fuente y el guardado en caché.
 from abc import ABC, abstractmethod
+import asyncio
+import inspect
 
 
 class BaseConsultar(ABC):
@@ -10,19 +12,22 @@ class BaseConsultar(ABC):
         self.usuario = usuario  # Usuario actual
         self.ciclo = ciclo      # Ciclo académico actual
 
-    async def obtener_de_cache(self):
+    def obtener_de_cache(self):
         # obtiene resultado desde caché
-        return await self.cache.get(self.usuario, self.ciclo)
+        return self.cache.get(self.usuario, self.ciclo)
 
-    async def obtener_de_fuente(self):
+    def obtener_de_fuente(self):
         # obtiene el resultado desde la fuente (scraping)
-        return await self.scraper.scrap()
+        metodo_scrap = self.scraper.scrap
+        if inspect.iscoroutinefunction(metodo_scrap):
+            return asyncio.run(metodo_scrap())
+        return metodo_scrap()
 
-    async def guardar_en_cache(self, resultado):
+    def guardar_en_cache(self, resultado):
         # guarda el resultado caché con TTL de 1 hora
-        await self.cache.set(self.usuario, self.ciclo, resultado, ttl=3600)
+        self.cache.set(self.usuario, self.ciclo, resultado, ttl=3600)
 
     @abstractmethod
-    async def ejecutar_consulta(self):
+    def ejecutar_consulta(self):
         # debe ser implementado por los casos de uso concretos para devolver datos estructurados
         pass

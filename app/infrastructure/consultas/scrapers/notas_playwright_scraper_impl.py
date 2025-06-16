@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import Any
 
 from playwright.async_api import async_playwright
 from app.infrastructure.consultas.scrapers.base_web_scraper_impl import BaseWebScraperImpl
@@ -23,39 +23,29 @@ class NotasPlaywrightScraperImpl(BaseWebScraperImpl):
             print("click en el boton login")
 
             await pagina.wait_for_load_state()
-            await pagina.goto("https://intranet.cibertec.edu.pe/Redirecciona.asp?iTipo=1&inum=1&nomasp=SesionNet.asp"
-                              "?WPAG1=gestiante/GESEST000.aspx?Destino=GESEST001.aspx")
+            await pagina.goto("https://intranet.cibertec.edu.pe/Redirecciona.asp?iTipo=1&inum=1&nomasp=SesionNet.asp?WPAG1=gestudiante/GESEST000.aspx?Destino=GESEST001.aspx")
             print(pagina.url)
+
             await pagina.wait_for_load_state()
-
-            cuerpo = await pagina.query_selector("body")
-            cuerpohtml = await cuerpo.inner_html()
-            print(cuerpohtml)
-
             print(pagina.url)
-            await pagina.wait_for_selector("#DataTables_Table_0")
-            print("se detectó la 1ra tabla")
 
-            # selecciona la tabla y todas las filas dentro
-            tabla = await pagina.query_selector("#DataTables_Table_0")
-            print("se guardo la tabla")
-            filas = await tabla.query_selector_all("#DataTables_Table_0 tr")
-            print("se guardo las filas")
+            # Espera la tabla por clase
+            await pagina.wait_for_selector("table.tbDatos")
+            tabla = await pagina.query_selector("table.tbDatos")
 
-            # extrae primero el encabezado de la tabla
-            encabezado_celdas = await filas[0].query_selector_all("th,td")
+            # extrae encabezados
+            encabezado_fila = await tabla.query_selector("thead tr")
+            encabezado_celdas = await encabezado_fila.query_selector_all("th")
             encabezado = [await celda.inner_text() for celda in encabezado_celdas]
-            print(f"Encabezado: {encabezado}")
 
+            # extrae las filas
+            filas = await tabla.query_selector_all("tbody tr")
             datos = []
-            for fila in filas[1:]:
+            for fila in filas:
                 celdas = await fila.query_selector_all("td")
-                if not celdas:
-                    continue
                 valores = [await celda.inner_text() for celda in celdas]
-                # empareja el encabezado con los valores
-                fila_dict = dict(zip(encabezado, valores))
-                datos.append(fila_dict)
+                if len(valores) == len(encabezado):
+                    datos.append(dict(zip(encabezado, valores)))
 
             await navegador.close()
             return datos

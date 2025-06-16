@@ -5,9 +5,9 @@ import json
 
 
 class ConsultarNotasUseCase(BaseConsultar):
-    async def ejecutar_consulta(self):
+    def ejecutar_consulta(self):
         # primero intenta obtener de caché
-        datos = await self.obtener_de_cache()
+        datos = self.obtener_de_cache()
         desde_cache = False
         if datos:
             # si hay datos en caché, deserializa
@@ -15,6 +15,6 @@ class ConsultarNotasUseCase(BaseConsultar):
             desde_cache = True
         else:
             # si no hay datos en caché, obtiene de fuente y guarda
-            notas = await self.obtener_de_fuente()
-            await self.guardar_en_cache(json.dumps(notas))
+            notas = self.obtener_de_fuente()
+            self.guardar_en_cache(json.dumps(notas))
         return notas, self.ciclo, desde_cache

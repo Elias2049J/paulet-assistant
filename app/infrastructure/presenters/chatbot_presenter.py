@@ -4,5 +4,5 @@ class ChatbotPresenter:
     def __init__(self, service):
         self.service = service
 
-    async def manejar_entrada_de_usuario(self, mensaje: str) -> str:
-        return await self.service.procesar_consulta(mensaje)
+    def manejar_entrada_de_usuario(self, mensaje: str) -> str:
+        return self.service.procesar_consulta(mensaje)
