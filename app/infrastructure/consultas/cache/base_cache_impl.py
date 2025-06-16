@@ -10,9 +10,9 @@ class BaseCacheImpl(CacheInterface, ABC):
         return f"{self.__class__.__name__.lower()}:{usuario}:{ciclo}"
 
     @abstractmethod
-    def get(self, usuario: str, ciclo: str) -> str:
+    async def get(self, usuario: str, ciclo: str) -> str:
         pass
 
     @abstractmethod
-    def set(self, usuario: str, ciclo: str, value: str, ttl: int):
+    async def set(self, usuario: str, ciclo: str, value: str, ttl: int):
         pass

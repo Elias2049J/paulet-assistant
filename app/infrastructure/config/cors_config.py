@@ -1,6 +1,6 @@
 # Configuración de CORS para la aplicación FastAPI.
-# Permite solicitudes POST desde cualquier origen.
-from fastapi.middleware.cors import  CORSMiddleware
+# Permite solicitudes desde cualquier origen y todos los métodos.
+from fastapi.middleware.cors import CORSMiddleware
 
 
 def configure_cors(app):
@@ -8,6 +8,6 @@ def configure_cors(app):
         CORSMiddleware,
         allow_origins=["*"],
         allow_credentials=True,
-        allow_methods=["POST"],
+        allow_methods=["*"],
         allow_headers=["*"],
     )

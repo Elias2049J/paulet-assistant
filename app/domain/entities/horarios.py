@@ -5,7 +5,7 @@ class Horario:
     ):
         self.curso = curso  # Nombre del curso
         self.clase = clase  # Nombre de la clase
-        self.tipo = tipo    # Tipo de clase (teoría, práctica, etc.)
+        self.tipo = tipo    # Tipo de clase
         self.desde = desde  # Hora de inicio
         self.hasta = hasta  # Hora de fin
         self.sede = sede    # Sede o aula

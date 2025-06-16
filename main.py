@@ -1,11 +1,14 @@
-# Punto de entrada principal de la aplicación FastAPI para el backend de Paulet Assistant.
-# Configura el flujo de Clean Architecture: rutas, casos de uso, scrapers, caché y servicios.
+# Punto de entrada principal de la aplicacion
+# Configura el flujo de la app: rutas, casos de uso, scrapers, caché y servicios.
+import os
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from app.infrastructure.routes.chatbot_routes import get_router
 from app.domain.entities.decision_tree import DecisionTree
 from app.application.use_cases.consultar_notas_use_case import ConsultarNotasUseCase
 from app.application.use_cases.consultar_horarios_use_case import ConsultarHorariosUseCase
-from app.infrastructure.consultas.scrapers.notas_web_scraper_impl import NotasWebScraperImpl
+from app.infrastructure.consultas.scrapers.notas_playwright_scraper_impl import NotasPlaywrightScraperImpl
 from app.infrastructure.consultas.cache.redis_cache_impl import RedisCacheImpl
 from app.infrastructure.consultas.scrapers.horarios_web_scraper_impl import HorariosWebScraperImpl
 from app.application.services.chatbot_service import ChatbotService
@@ -15,31 +18,38 @@ from app.infrastructure.config.redis_client import redis_client
 from app.infrastructure.config.cors_config import configure_cors
 
 # Configuración de la app y CORS
-app = FastAPI()
-configure_cors(app)
+application = FastAPI()
+configure_cors(application)
 
-# Datos fijos para el usuario de pruebas (ajustar si se requiere multiusuario)
-usuario = "usuario_demo"
-clave = "123456"
+# Datos fijos para el usuario de pruebas
+usuario = os.getenv("USUARIO")
+clave = os.getenv("PASSWORD")
 ciclo = "2025-1"
 
-# Instancia de caché Redis
-cache = RedisCacheImpl(redis_client)
+# Variables globales para dependencias
+redis_cache = None
+use_cases = None
+chatbot_service = None
+controller = None
 
-# Casos de uso con scrapers y caché, para notas y horarios
-use_cases = {
-    "consultar_notas": ConsultarNotasUseCase(
-        NotasWebScraperImpl(usuario, clave, ciclo), cache, usuario, ciclo
-    ),
-    "consultar_horarios": ConsultarHorariosUseCase(
-        HorariosWebScraperImpl(usuario, clave, ciclo), cache, usuario, ciclo
-    )
-}
 
-# Configuración del flujo conversacional y servicios
-flow_manager = FlowManagerService(DecisionTree())
-chatbot_service = ChatbotService(flow_manager, use_cases)
-controller = ChatbotPresenter(chatbot_service)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global redis_cache, use_cases, chatbot_service, controller
+    redis_client_instance = await redis_client()
+    redis_cache = RedisCacheImpl(redis_client_instance)
+    use_cases = {
+        "consultar_notas": ConsultarNotasUseCase(
+            NotasPlaywrightScraperImpl(usuario, clave, ciclo), redis_cache, usuario, ciclo
+        ),
+        "consultar_horarios": ConsultarHorariosUseCase(
+            HorariosWebScraperImpl(usuario, clave, ciclo), redis_cache, usuario, ciclo
+        )
+    }
+    flow_manager = FlowManagerService(DecisionTree())
+    chatbot_service = ChatbotService(flow_manager, use_cases)
+    controller = ChatbotPresenter(chatbot_service)
+    app.include_router(get_router(controller))
+    yield
 
-# Registro de la ruta principal del chatbot
-app.include_router(get_router(controller))
+application = FastAPI(lifespan=lifespan)

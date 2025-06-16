@@ -6,6 +6,6 @@ from abc import ABC, abstractmethod
 
 class WebScraperInterface(ABC):
     @abstractmethod
-    def scrap(self) -> str:
+    async def scrap(self) -> str:
         # Realiza el scraping y retorna los datos como string.
         pass

@@ -4,7 +4,7 @@ from app.infrastructure.consultas.scrapers.base_web_scraper_impl import BaseWebS
 
 
 class HorariosWebScraperImpl(BaseWebScraperImpl):
-    def scrap(self) -> str:
+    async def scrap(self) -> str:
         # Datos hardcodeados de ejemplo
         return (
             f"Horarios para {self.usuario} en ciclo {self.ciclo}:\n"

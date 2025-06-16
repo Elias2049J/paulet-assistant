@@ -8,15 +8,13 @@ class RedisCacheImpl(BaseCacheImpl):
     def __init__(self, client: redis_client):
         self.redis_client = client
 
-    def get(self, usuario: str, ciclo: str) -> str:
-        # Recupera el valor desde Redis usando la clave construida.
+    async def get(self, usuario: str, ciclo: str) -> str:
+        # recupera el valor desde Redis usando la clave construida.
         key = self._build_key(usuario, ciclo)
-        value = self.redis_client.get(key)
-        if value is not None:
-            return value.decode('utf-8')
-        return ""
+        value = await self.redis_client.get(key)
+        return value if value is not None else ""
 
-    def set(self, usuario: str, ciclo: str, value: str, ttl: int):
-        # Almacena el valor en Redis con TTL (tiempo de vida en segundos).
+    async def set(self, usuario: str, ciclo: str, value: str, ttl: int):
+        # almacena el valor en Redis con TTL
         key = self._build_key(usuario, ciclo)
-        self.redis_client.set(key, value, ex=ttl)
+        await self.redis_client.set(key, value, ex=ttl)

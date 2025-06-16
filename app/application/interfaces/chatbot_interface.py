@@ -5,6 +5,6 @@ from abc import ABC, abstractmethod
 
 class ChatbotInterface(ABC):
     @abstractmethod
-    def procesar_consulta(self, mensaje: str) -> str:
+    async def procesar_consulta(self, mensaje: str) -> str:
         # Procesa una consulta del usuario y retorna la respuesta.
         pass

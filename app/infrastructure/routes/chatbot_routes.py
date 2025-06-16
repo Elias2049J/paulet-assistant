@@ -20,7 +20,7 @@ def get_router(presenter):
     @router.post("/paulet/chat")
     async def conversar(request: ChatRequest):
         # Delegamos el procesamiento del mensaje al presentador.
-        respuesta = presenter.manejar_entrada_de_usuario(request.message)
+        respuesta = await presenter.manejar_entrada_de_usuario(request.message)
         return {"respuesta": respuesta}
 
     return router
