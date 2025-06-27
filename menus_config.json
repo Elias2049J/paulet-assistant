@@ -1,0 +1,53 @@
+{
+  "main": {
+    "id": "main",
+    "title": "Menú Principal",
+    "message": "Hola, soy Paulet, tu asistente virtual. Escoge una de las siguientes opciones:",
+    "is_dynamic": false,
+    "options": [
+      {
+        "key": "1",
+        "label": "Consultar notas",
+        "action": "obtener_periodos_notas"
+      },
+      {
+        "key": "2",
+        "label": "Consultar horarios",
+        "action": "consultar_horarios"
+      }
+    ]
+  },
+  "seleccionar_periodo": {
+    "id": "seleccionar_periodo",
+    "title": "Seleccionar Período",
+    "message": "Aquí tienes los períodos disponibles. Selecciona el número del período que deseas consultar:",
+    "is_dynamic": true,
+    "dynamic_data_key": "periodos_obtenidos",
+    "action": "consultar_notas_periodo",
+    "options": [
+      {
+        "key": "1",
+        "label": "Volver al menú principal",
+        "target_menu_id": "main"
+      }
+    ]
+  },
+  "mostrar_notas": {
+    "id": "mostrar_notas",
+    "title": "Notas del Período",
+    "message": "Aquí tienes las notas del período seleccionado:",
+    "is_dynamic": false,
+    "options": [
+      {
+        "key": "1",
+        "label": "Seleccionar otro período",
+        "target_menu_id": "seleccionar_periodo"
+      },
+      {
+        "key": "2",
+        "label": "Volver al menú principal",
+        "target_menu_id": "main"
+      }
+    ]
+  }
+}

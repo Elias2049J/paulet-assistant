@@ -1,16 +1,13 @@
-# Implementación base para scrapers web en Clean Architecture.
-# Define la estructura común para los scrapers de notas y horarios.
 from app.application.interfaces.webscraper_interface import WebScraperInterface
 from abc import ABC, abstractmethod
-
+from typing import Any
 
 class BaseWebScraperImpl(WebScraperInterface, ABC):
     def __init__(self, usuario: str, clave: str, ciclo: str):
-        self.usuario = usuario  # Usuario para autenticación
-        self.clave = clave      # Clave para autenticación
-        self.ciclo = ciclo      # Ciclo académico
+        self.usuario = usuario
+        self.clave = clave
+        self.ciclo = ciclo
 
     @abstractmethod
-    def scrap(self) -> str:
-        # Método abstracto para realizar el scraping.
+    async def scrap(self) -> Any:
         pass

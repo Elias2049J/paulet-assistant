@@ -1,33 +1,82 @@
-# Caso de uso base para consultas (notas, horarios, etc.) en Clean Architecture.
-# Gestiona la obtención de datos desde caché o fuente y el guardado en caché.
 from abc import ABC, abstractmethod
 import asyncio
 import inspect
+import logging
+import json
+from typing import Any, Optional
+
+logger = logging.getLogger(__name__)
 
 
-class BaseConsultar(ABC):
-    def __init__(self, scraper, cache, usuario, ciclo):
-        self.scraper = scraper  # Instancia del scraper web
-        self.cache = cache      # Instancia de la caché
-        self.usuario = usuario  # Usuario actual
-        self.ciclo = ciclo      # Ciclo académico actual
+class ConsultaUseCase(ABC):
+    """Clase base simplificada para casos de uso de consulta"""
 
-    def obtener_de_cache(self):
-        # obtiene resultado desde caché
-        return self.cache.get(self.usuario, self.ciclo)
+    def __init__(self, extractor, cache, usuario, ciclo):
+        self.extractor = extractor  # Instancia del extractor de datos
+        self.cache = cache          # Instancia de la caché
+        self.usuario = usuario      # Usuario actual
+        self.ciclo = ciclo          # Ciclo académico actual
+        self.cache_key = f"{self.__class__.__name__}:{usuario}:{ciclo}"
 
-    def obtener_de_fuente(self):
-        # obtiene el resultado desde la fuente (scraping)
-        metodo_scrap = self.scraper.scrap
-        if inspect.iscoroutinefunction(metodo_scrap):
-            return asyncio.run(metodo_scrap())
-        return metodo_scrap()
+    def obtener_de_cache(self, clave_adicional: str = None) -> Optional[str]:
+        """Obtiene resultado desde caché con manejo de errores"""
+        try:
+            clave = self.cache_key
+            if clave_adicional:
+                clave = f"{clave}:{clave_adicional}"
 
-    def guardar_en_cache(self, resultado):
-        # guarda el resultado caché con TTL de 1 hora
-        self.cache.set(self.usuario, self.ciclo, resultado, ttl=3600)
+            logger.debug(f"Intentando obtener datos de caché con clave: {clave}")
+            datos = self.cache.get(self.usuario, self.ciclo)
+
+            if datos:
+                logger.info(f"Datos encontrados en caché para {clave}")
+                return datos
+            logger.info(f"No se encontraron datos en caché para {clave}")
+            return None
+        except Exception as e:
+            logger.error(f"Error obteniendo datos de caché: {e}")
+            return None
+
+    async def obtener_de_fuente(self, timeout: int = 60) -> Any:
+        """Obtiene el resultado desde la fuente (scraping) con timeout"""
+        try:
+            logger.info(f"Obteniendo datos de fuente con timeout de {timeout}s")
+            metodo_extraer = self.extractor.scrap
+
+            if inspect.iscoroutinefunction(metodo_extraer):
+                return await asyncio.wait_for(metodo_extraer(), timeout=timeout)
+            return metodo_extraer()
+        except asyncio.TimeoutError:
+            logger.error(f"Timeout de {timeout}s excedido al obtener datos de fuente")
+            return None
+        except Exception as e:
+            logger.error(f"Error obteniendo datos de fuente: {e}")
+            return None
+
+    def guardar_en_cache(self, resultado: Any, ttl: int = 3600, clave_adicional: str = None) -> bool:
+        """Guarda el resultado en caché con TTL"""
+        try:
+            if not resultado:
+                logger.warning("No se guardaron datos en caché: resultado vacío")
+                return False
+
+            clave = self.cache_key
+            if clave_adicional:
+                clave = f"{clave}:{clave_adicional}"
+
+            # Convertir a string si es necesario
+            datos_cache = resultado
+            if not isinstance(resultado, str):
+                datos_cache = json.dumps(resultado)
+
+            logger.info(f"Guardando datos en caché con clave: {clave}, TTL: {ttl}s")
+            self.cache.set(self.usuario, self.ciclo, datos_cache, ttl)
+            return True
+        except Exception as e:
+            logger.error(f"Error guardando datos en caché: {e}")
+            return False
 
     @abstractmethod
-    def ejecutar_consulta(self):
-        # debe ser implementado por los casos de uso concretos para devolver datos estructurados
+    async def ejecutar_consulta(self) -> Any:
+        """Debe ser implementado por los casos de uso concretos"""
         pass

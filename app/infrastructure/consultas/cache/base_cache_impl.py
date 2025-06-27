@@ -2,6 +2,7 @@
 # Proporciona la construcción de claves y define la interfaz para get/set.
 from app.application.interfaces.cache_interface import CacheInterface
 from abc import ABC, abstractmethod
+from typing import Dict, Any
 
 
 class BaseCacheImpl(CacheInterface, ABC):
@@ -15,4 +16,24 @@ class BaseCacheImpl(CacheInterface, ABC):
 
     @abstractmethod
     def set(self, usuario: str, ciclo: str, value: str, ttl: int):
+        pass
+
+    @abstractmethod
+    def delete(self, usuario: str, ciclo: str) -> bool:
+        pass
+
+    @abstractmethod
+    def exists(self, usuario: str, ciclo: str) -> bool:
+        pass
+
+    @abstractmethod
+    def get_ttl(self, usuario: str, ciclo: str) -> int:
+        pass
+
+    @abstractmethod
+    def clear_user_cache(self, usuario: str) -> int:
+        pass
+
+    @abstractmethod
+    def health_check(self) -> Dict[str, Any]:
         pass
