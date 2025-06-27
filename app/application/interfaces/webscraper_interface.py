@@ -2,10 +2,11 @@
 # Define el método que debe implementar cualquier scraper.
 
 from abc import ABC, abstractmethod
+from typing import Any
 
 
 class WebScraperInterface(ABC):
     @abstractmethod
-    def scrap(self) -> str:
+    def scrap(self) -> Any:
         # Realiza el scraping y retorna los datos como string.
         pass

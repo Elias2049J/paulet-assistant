@@ -4,7 +4,6 @@ import os
 
 from fastapi import FastAPI
 from app.infrastructure.routes.chatbot_routes import get_router
-from app.domain.entities.decision_tree import DecisionTree
 from app.application.use_cases.consultar_notas_use_case import ConsultarNotasUseCase
 from app.application.use_cases.consultar_horarios_use_case import ConsultarHorariosUseCase
 from app.infrastructure.consultas.scrapers.notas_playwright_scraper_impl import NotasPlaywrightScraperImpl
@@ -15,6 +14,7 @@ from app.application.services.flow_manager_service import FlowManagerService
 from app.infrastructure.presenters.chatbot_presenter import ChatbotPresenter
 from app.infrastructure.config.redis_client import redis_client
 from app.infrastructure.config.cors_config import configure_cors
+from app.infrastructure.config.decision_tree_loader import DecisionTreeLoader
 
 # Configuración de la app y CORS
 app = FastAPI()
@@ -35,7 +35,8 @@ use_cases = {
         HorariosWebScraperImpl(usuario, clave, ciclo), redis_cache, usuario, ciclo
     )
 }
-flow_manager = FlowManagerService(DecisionTree())
+decision_tree = DecisionTreeLoader.crear_arbol_decisiones()
+flow_manager = FlowManagerService(decision_tree)
 chatbot_service = ChatbotService(flow_manager, use_cases)
 controller = ChatbotPresenter(chatbot_service)
 app.include_router(get_router(controller))

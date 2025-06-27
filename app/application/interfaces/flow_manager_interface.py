@@ -5,6 +5,6 @@ from abc import ABC, abstractmethod
 
 class FlowManagerInterface(ABC):
     @abstractmethod
-    def avanzar(self, mensaje: str):
+    def avanzar(self, mensaje: str, usuario_id: str):
         # Avanza el flujo conversacional según el mensaje del usuario.
         pass
