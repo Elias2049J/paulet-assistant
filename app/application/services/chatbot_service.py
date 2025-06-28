@@ -34,10 +34,15 @@ class ChatbotService:
                 logger.error(f"Menú no encontrado: {menu_actual_id}")
                 return "Error: menú no encontrado. Iniciando de nuevo."
 
-            # Verificar si está en pantalla de resultados
+            # Verificar si está en pantalla de resultados de notas
             if menu_actual_id == "seleccionar_periodo" and self.state_service.obtener_datos_dinamicos(usuario_id, "mostrando_resultados"):
                 # Estamos mostrando resultados de notas, manejar opciones de navegación post-resultados
                 return await self._manejar_navegacion_post_resultados(mensaje, usuario_id)
+
+            # Verificar si está en pantalla de resultados de horarios
+            if self.state_service.obtener_datos_dinamicos(usuario_id, "mostrando_horarios"):
+                # Estamos mostrando resultados de horarios, manejar opciones de navegación
+                return await self._manejar_navegacion_post_horarios(mensaje, usuario_id)
 
             # Procesar entrada del usuario
             respuesta, accion = self._procesar_entrada_usuario(mensaje, menu_actual, usuario_id)
@@ -53,6 +58,8 @@ class ChatbotService:
                     # El presentador ya incluye las opciones de navegación
                     return resultado_accion
                 elif accion == "consultar_horarios":
+                    # Marcar que estamos mostrando horarios para manejar navegación posterior
+                    self.state_service.almacenar_datos_dinamicos(usuario_id, "mostrando_horarios", True)
                     # El presentador ya incluye las opciones de navegación
                     return resultado_accion
                 else:
@@ -87,6 +94,27 @@ class ChatbotService:
             return "Por favor ingresa un número válido (1 o 2)."
         except Exception as e:
             logger.error(f"Error en navegación post-resultados: {e}")
+            return "Error procesando la selección. Intenta nuevamente."
+
+    async def _manejar_navegacion_post_horarios(self, mensaje: str, usuario_id: str) -> str:
+        """Maneja las opciones después de mostrar resultados de horarios"""
+        try:
+            opcion = int(mensaje)
+
+            if opcion == 1:
+                # Volver al menú principal
+                logger.info(f"Usuario {usuario_id} seleccionó volver al menú principal desde horarios")
+                # Limpiar estado de horarios
+                self.state_service.almacenar_datos_dinamicos(usuario_id, "mostrando_horarios", False)
+                self.state_service.establecer_menu_actual(usuario_id, "main")
+                return self._mostrar_menu("main", usuario_id)
+            else:
+                return "Opción no válida. Por favor selecciona 1 para volver al menú principal."
+
+        except ValueError:
+            return "Por favor ingresa un número válido."
+        except Exception as e:
+            logger.error(f"Error en navegación post-horarios: {e}")
             return "Error procesando la selección. Intenta nuevamente."
 
     def _mostrar_menu(self, menu_id: str, usuario_id: str) -> str:
@@ -223,6 +251,12 @@ class ChatbotService:
             # Verificar si es la primera vez que se consulta notas en esta sesión
             primer_consulta_sesion = f"{usuario_id}_notas" not in self._sesiones_con_scraping_realizado
             logger.info(f"[CONSULTA NOTAS] ¿Primera consulta de notas en la sesión? {primer_consulta_sesion}")
+
+            # Verificar si ya tenemos períodos almacenados en el estado del usuario
+            periodos_almacenados = self.state_service.obtener_datos_dinamicos(usuario_id, "periodos_obtenidos")
+            if not primer_consulta_sesion and periodos_almacenados:
+                logger.info(f"[CONSULTA NOTAS] Usando períodos ya almacenados en estado: {periodos_almacenados}")
+                return self._mostrar_menu("seleccionar_periodo", usuario_id)
 
             # Pasar el indicador de forzar scraping al caso de uso
             logger.info("[CONSULTA NOTAS] Ejecutando obtener_solo_periodos()")

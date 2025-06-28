@@ -1,5 +1,7 @@
 import os
 import logging
+import threading
+import time
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.infrastructure.config.cors_config import configure_cors
@@ -11,19 +13,31 @@ from app.infrastructure.consultas.scrapers.horarios_web_scraper_impl import Hora
 from app.application.use_cases.consultar_notas_use_case import ConsultarNotasUseCase
 from app.application.use_cases.consultar_horarios_use_case import ConsultarHorariosUseCase
 from app.application.services.chatbot_service import ChatbotService
-from app.application.services.conversation_state_service import ConversationStateService
 from app.infrastructure.presenters.chatbot_presenter import ChatbotPresenter
 from app.infrastructure.routes.chatbot_routes import get_router
 from app.infrastructure.routes.cache_routes import get_cache_router
+from app.infrastructure.routes.monitoring_routes import router as monitoring_router
+from app.infrastructure.monitoring.system_monitor import SystemMonitor
 from app.infrastructure.config.redis_config import redis_config
 from dotenv import load_dotenv
+
+
+# Monitoreo de memoria
+def monitor_memory():
+    while True:
+        SystemMonitor.log_system_resources()
+        time.sleep(10)
+
+
+threading.Thread(target=monitor_memory, daemon=True).start()
 
 # Cargar variables de entorno
 load_dotenv()
 
-# Configurar logging
+# Configurar logging en terminal
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -31,6 +45,7 @@ async def lifespan(app: FastAPI):
     logger.info(f"Configuración Redis: {redis_config.host}:{redis_config.port}")
     yield
     logger.info("Cerrando aplicación Paulet Assistant")
+
 
 # Crear aplicación FastAPI
 app = FastAPI(
@@ -91,12 +106,14 @@ try:
 
     app.include_router(chatbot_router, tags=["Chatbot"])
     app.include_router(cache_router, prefix="/admin", tags=["Cache Administration"])
+    app.include_router(monitoring_router, prefix="/admin/monitoring", tags=["Monitoring"])
 
     logger.info("Todas las dependencias configuradas exitosamente")
 
 except Exception as e:
     logger.error(f"Error durante la configuración de la aplicación: {e}")
     raise
+
 
 @app.get("/")
 async def root():
@@ -107,9 +124,11 @@ async def root():
         "endpoints": {
             "chat": "/paulet/chat",
             "cache_health": "/admin/cache/health",
-            "cache_stats": "/admin/cache/stats"
+            "cache_stats": "/admin/cache/stats",
+            "monitoring": "/admin/monitoring"
         }
     }
+
 
 @app.get("/health")
 async def health_check():
@@ -132,8 +151,10 @@ async def health_check():
             "error": str(e)
         }
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
