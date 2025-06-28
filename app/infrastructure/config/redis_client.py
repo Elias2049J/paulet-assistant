@@ -1,12 +1,10 @@
-# Configuración del cliente Redis para la caché de la aplicación.
-# Permite la conexión a Redis usando variables de entorno o valores por defecto.
 from redis import Redis, ConnectionPool
 from redis.exceptions import ConnectionError, TimeoutError
-import os
 import logging
 from app.infrastructure.config.redis_config import redis_config
 
 logger = logging.getLogger(__name__)
+
 
 def redis_client():
     """

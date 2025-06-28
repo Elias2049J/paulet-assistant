@@ -2,7 +2,7 @@
   "main": {
     "id": "main",
     "title": "Menú Principal",
-    "message": "Hola, soy Paulet, tu asistente virtual. Escoge una de las siguientes opciones:",
+    "message": "Escoge una de las siguientes opciones:",
     "is_dynamic": false,
     "options": [
       {

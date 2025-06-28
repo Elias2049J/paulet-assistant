@@ -1,7 +1,7 @@
-# Configuración centralizada para Redis
 import os
 from dataclasses import dataclass
 from typing import Optional
+
 
 @dataclass
 class RedisConfig:
@@ -56,6 +56,7 @@ class RedisConfig:
         """Genera URL de conexión para Redis"""
         auth = f":{self.password}@" if self.password else ""
         return f"redis://{auth}{self.host}:{self.port}/{self.db}"
+
 
 # Configuración global
 redis_config = RedisConfig.from_env()

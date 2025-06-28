@@ -1,5 +1,3 @@
-# Configuración de CORS para la aplicación FastAPI.
-# Permite solicitudes desde cualquier origen y todos los métodos.
 from fastapi.middleware.cors import CORSMiddleware
 
 

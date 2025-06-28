@@ -1,35 +1,55 @@
 @startuml
-actor Usuario
-participant "FastAPI\n(Endpoint)" as API
-participant "ChatbotPresenter" as Presenter
-participant "ChatbotService" as Service
-participant "FlowManagerService" as FlowManager
-participant "BaseConsultar\n(UseCase)" as UseCase
-participant "WebScraperImpl" as Scraper
-participant "CacheImpl" as Cache
+actor usuario
+participant "frontend" as frontend
+participant "fastapi endpoint" as api
+participant "chatbotpresenter" as presenter
+participant "chatbotservice" as service
+participant "menuservice" as menuservice
+participant "conversationstateservice" as stateservice
+participant "consultar_notas_usecase" as notas_uc
+participant "consultar_horarios_usecase" as horarios_uc
+participant "calificacion_scraper" as notas_scraper
+participant "horarios_scraper" as horarios_scraper
+participant "cacheimpl" as cache
 
-Usuario -> API : POST /paulet/chat\n{ "message": msg }
-API -> Presenter : manejar_entrada_de_usuario(msg)
-Presenter -> Service : procesar_consulta(msg)
-Service -> FlowManager : avanzar(msg)
-FlowManager -> FlowManager : Actualiza estado\nDevuelve nodo actual
-Service -> Service : Lee acción del nodo
-alt Acción requiere consulta (ej: consultar_notas)
-    Service -> UseCase : ejecutar_consulta()
-    UseCase -> Cache : get(usuario, ciclo)
-    alt Hay datos en caché
-        Cache --> UseCase : datos
-        UseCase --> Service : "(desde caché) datos"
-    else No hay datos en caché
-        UseCase -> Scraper : scrap()
-        Scraper --> UseCase : datos_scrapeados
-        UseCase -> Cache : set(usuario, ciclo, datos_scrapeados, ttl)
-        UseCase --> Service : "(desde scraping) datos_scrapeados"
+' el usuario envía un mensaje desde el frontend
+usuario -> frontend : envia mensaje
+frontend -> api : post /paulet/chat { message }
+api -> presenter : manejar_entrada_de_usuario(message)
+presenter -> service : procesar_consulta(message, usuario_id)
+service -> stateservice : inicializar_usuario(usuario_id)
+service -> menuservice : get_initial_menu o process_user_input(message, usuario_id)
+menuservice -> stateservice : obtener_menu_actual(usuario_id)
+alt accion consultar notas
+    service -> notas_uc : obtener_solo_periodos o ejecutar_consulta()
+    notas_uc -> cache : get(usuario)
+    alt datos en cache
+        cache --> notas_uc : datos
+        notas_uc --> service : datos desde cache
+    else no hay datos en cache
+        notas_uc -> notas_scraper : scrap()
+        notas_scraper --> notas_uc : datos scrapeados
+        notas_uc -> cache : set(usuario, datos, ttl)
+        notas_uc --> service : datos desde scraping
     end
-    Service --> Presenter : respuesta
-else Solo mensaje de flujo
-    Service --> Presenter : nodo.get_mensaje()
+    service -> presenter : respuesta formateada
+else accion consultar horarios
+    service -> horarios_uc : ejecutar_consulta()
+    horarios_uc -> cache : get(usuario)
+    alt datos en cache
+        cache --> horarios_uc : datos
+        horarios_uc --> service : datos desde cache
+    else no hay datos en cache
+        horarios_uc -> horarios_scraper : scrap()
+        horarios_scraper --> horarios_uc : datos scrapeados
+        horarios_uc -> cache : set(usuario, datos, ttl)
+        horarios_uc --> service : datos desde scraping
+    end
+    service -> presenter : respuesta formateada
+else solo navegacion de menu
+    service -> presenter : respuesta de menu
 end
-Presenter --> API : respuesta
-API --> Usuario : { "respuesta": ... }
+presenter --> api : respuesta
+api --> frontend : { respuesta }
+frontend --> usuario : muestra respuesta
 @enduml
