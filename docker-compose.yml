@@ -14,6 +14,5 @@ services:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - USUARIO=${USUARIO}
-      - PASSWORD=${PASSWORD}
+      - FERNET_KEY=${FERNET_KEY}
 

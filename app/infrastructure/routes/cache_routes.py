@@ -9,7 +9,6 @@ router = APIRouter()
 
 class CacheDeleteRequest(BaseModel):
     usuario: str
-    ciclo: str
 
 
 class CacheStatsResponse(BaseModel):
@@ -42,10 +41,10 @@ def get_cache_router(cache_impl):
         cache_impl.reset_cache_stats()
         return {"message": "Estadísticas reiniciadas"}
 
-    @router.get("/cache/info/{usuario}/{ciclo}")
-    def cache_info(usuario: str, ciclo: str):
+    @router.get("/cache/info/{usuario}")
+    def cache_info(usuario: str):
         """Obtiene información detallada de una entrada específica"""
-        info = cache_impl.get_cache_info(usuario, ciclo)
+        info = cache_impl.get_cache_info(usuario)
         if not info:
             raise HTTPException(status_code=404, detail="Entrada no encontrada en caché")
         return info
@@ -53,7 +52,7 @@ def get_cache_router(cache_impl):
     @router.delete("/cache/entry")
     def delete_cache_entry(request: CacheDeleteRequest):
         """Elimina una entrada específica del caché"""
-        deleted = cache_impl.delete(request.usuario, request.ciclo)
+        deleted = cache_impl.delete(request.usuario)
         if not deleted:
             raise HTTPException(status_code=404, detail="Entrada no encontrada")
         return {"message": "Entrada eliminada exitosamente"}
@@ -67,11 +66,11 @@ def get_cache_router(cache_impl):
             "deleted_entries": deleted_count
         }
 
-    @router.get("/cache/exists/{usuario}/{ciclo}")
-    def cache_exists(usuario: str, ciclo: str):
+    @router.get("/cache/exists/{usuario}")
+    def cache_exists(usuario: str):
         """Verifica si existe una entrada en el caché"""
-        exists = cache_impl.exists(usuario, ciclo)
-        ttl = cache_impl.get_ttl(usuario, ciclo) if exists else 0
+        exists = cache_impl.exists(usuario)
+        ttl = cache_impl.get_ttl(usuario) if exists else 0
         return {
             "exists": exists,
             "ttl_seconds": ttl
@@ -98,16 +97,5 @@ def get_cache_router(cache_impl):
             }
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error al obtener claves: {str(e)}")
-
-    @router.post("/cache/extend-ttl/{usuario}/{ciclo}")
-    def extend_cache_ttl(usuario: str, ciclo: str, additional_seconds: int = 3600):
-        """Extiende el TTL de una entrada específica"""
-        success = cache_impl.extend_ttl(usuario, ciclo, additional_seconds)
-        if not success:
-            raise HTTPException(status_code=404, detail="Entrada no encontrada o TTL no válido")
-        return {
-            "message": f"TTL extendido por {additional_seconds} segundos",
-            "new_ttl": cache_impl.get_ttl(usuario, ciclo)
-        }
 
     return router

@@ -1,12 +1,12 @@
 class HorariosPresenter:
     @staticmethod
-    def formatear_respuesta(horarios, ciclo, desde_cache=False):
+    def formatear_respuesta(horarios, desde_cache=False):
         origen = "(desde caché)" if desde_cache else "(desde scraping)"
 
         if isinstance(horarios, str):
             return f"{origen} {horarios}"
 
-        resultado = [f"{origen} Horarios para ciclo {ciclo}:"]
+        resultado = [f"{origen} Horarios:"]
 
         # Verificar si hay horarios con cursos reales
         total_cursos = 0
@@ -23,7 +23,7 @@ class HorariosPresenter:
 
         # Si no hay cursos reales en total, mostrar un mensaje amigable
         if cursos_validos == 0:
-            return f"{origen} No se encontraron horarios disponibles para el ciclo {ciclo}. Por favor intenta más tarde."
+            return f"{origen} No se encontraron horarios disponibles. Por favor intenta más tarde."
 
         # Mostrar solo días con cursos válidos
         for dia, horario_diario in horarios.items():

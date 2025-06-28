@@ -1,11 +1,9 @@
-# Implementación mejorada de la caché usando Redis.
-# Permite almacenar y recuperar datos en Redis para cada usuario y ciclo con manejo de errores.
 from app.infrastructure.consultas.cache.base_cache_impl import BaseCacheImpl
 from app.infrastructure.config.redis_client import redis_client
 import json
 import logging
 from typing import Optional, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -19,10 +17,10 @@ class RedisCacheImpl(BaseCacheImpl):
             "errors": 0
         }
 
-    def get(self, usuario: str, ciclo: str) -> str:
+    def get(self, usuario: str) -> str:
         """Recupera el valor desde Redis usando la clave construida con manejo de errores."""
         try:
-            key = self._build_key(usuario, ciclo)
+            key = self._build_key(usuario)
             raw_data = self.redis_client.get(key)
 
             if raw_data is not None:
@@ -50,18 +48,17 @@ class RedisCacheImpl(BaseCacheImpl):
             logger.error(f"Error al obtener de caché: {e}")
             return ""
 
-    def set(self, usuario: str, ciclo: str, value: str, ttl: int):
+    def set(self, usuario: str, value: str, ttl: int):
         """Almacena el valor en Redis con TTL y manejo de errores."""
         try:
-            key = self._build_key(usuario, ciclo)
+            key = self._build_key(usuario)
 
             # Crear metadata para el valor
             cache_data = {
                 "value": value,
                 "timestamp": datetime.now().isoformat(),
                 "ttl": ttl,
-                "usuario": usuario,
-                "ciclo": ciclo
+                "usuario": usuario
             }
 
             # Guardar como JSON para incluir metadata
@@ -74,10 +71,10 @@ class RedisCacheImpl(BaseCacheImpl):
             self._cache_stats["errors"] += 1
             logger.error(f"Error al guardar en caché: {e}")
 
-    def delete(self, usuario: str, ciclo: str) -> bool:
+    def delete(self, usuario: str) -> bool:
         """Elimina una entrada específica del caché."""
         try:
-            key = self._build_key(usuario, ciclo)
+            key = self._build_key(usuario)
             result = self.redis_client.delete(key)
 
             if result:
@@ -92,48 +89,29 @@ class RedisCacheImpl(BaseCacheImpl):
             logger.error(f"Error al eliminar de caché: {e}")
             return False
 
-    def exists(self, usuario: str, ciclo: str) -> bool:
+    def exists(self, usuario: str) -> bool:
         """Verifica si una clave existe en el caché."""
         try:
-            key = self._build_key(usuario, ciclo)
+            key = self._build_key(usuario)
             return bool(self.redis_client.exists(key))
         except Exception as e:
             logger.error(f"Error al verificar existencia en caché: {e}")
             return False
 
-    def get_ttl(self, usuario: str, ciclo: str) -> int:
+    def get_ttl(self, usuario: str) -> int:
         """Obtiene el tiempo de vida restante de una clave en segundos."""
         try:
-            key = self._build_key(usuario, ciclo)
+            key = self._build_key(usuario)
             ttl = self.redis_client.ttl(key)
             return ttl if ttl > 0 else 0
         except Exception as e:
             logger.error(f"Error al obtener TTL: {e}")
             return 0
 
-    def extend_ttl(self, usuario: str, ciclo: str, additional_seconds: int) -> bool:
-        """Extiende el TTL de una entrada existente."""
-        try:
-            key = self._build_key(usuario, ciclo)
-            current_ttl = self.redis_client.ttl(key)
-
-            if current_ttl > 0:
-                new_ttl = current_ttl + additional_seconds
-                self.redis_client.expire(key, new_ttl)
-                logger.info(f"TTL extendido para {key}: {new_ttl}s")
-                return True
-            else:
-                logger.warning(f"No se puede extender TTL para clave inexistente: {key}")
-                return False
-
-        except Exception as e:
-            logger.error(f"Error al extender TTL: {e}")
-            return False
-
     def clear_user_cache(self, usuario: str) -> int:
         """Limpia todas las entradas de caché de un usuario específico."""
         try:
-            pattern = f"{self.__class__.__name__.lower()}:{usuario}:*"
+            pattern = f"{self.__class__.__name__.lower()}:{usuario}*"
             keys = self.redis_client.keys(pattern)
 
             if keys:
@@ -166,16 +144,16 @@ class RedisCacheImpl(BaseCacheImpl):
             logger.error(f"Error al limpiar todo el caché: {e}")
             return 0
 
-    def get_cache_info(self, usuario: str, ciclo: str) -> Optional[Dict[str, Any]]:
+    def get_cache_info(self, usuario: str) -> Optional[Dict[str, Any]]:
         """Obtiene información detallada sobre una entrada de caché."""
         try:
-            key = self._build_key(usuario, ciclo)
+            key = self._build_key(usuario)
             raw_data = self.redis_client.get(key)
 
             if raw_data:
                 try:
                     cache_data = json.loads(raw_data)
-                    cache_data["remaining_ttl"] = self.get_ttl(usuario, ciclo)
+                    cache_data["remaining_ttl"] = self.get_ttl(usuario)
                     cache_data["key"] = key
                     return cache_data
                 except json.JSONDecodeError:
@@ -183,7 +161,7 @@ class RedisCacheImpl(BaseCacheImpl):
                     return {
                         "value": raw_data,
                         "key": key,
-                        "remaining_ttl": self.get_ttl(usuario, ciclo),
+                        "remaining_ttl": self.get_ttl(usuario),
                         "is_legacy": True
                     }
             else:

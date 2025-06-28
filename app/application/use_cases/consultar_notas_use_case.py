@@ -41,9 +41,7 @@ class ConsultarNotasUseCase(ConsultaUseCase):
 
                 # Usar el presentador para formatear la respuesta
                 return CalificacionPresenter.formatear_respuesta(
-                    resultado["calificaciones"],
-                    self.ciclo,
-                    desde_cache
+                    resultado["calificaciones"], desde_cache
                 )
 
             except (json.JSONDecodeError, KeyError) as e:
@@ -79,7 +77,6 @@ class ConsultarNotasUseCase(ConsultaUseCase):
             # Usar el presentador para formatear la respuesta
             return CalificacionPresenter.formatear_respuesta(
                 datos_scraping["calificaciones"],
-                self.ciclo,
                 False
             )
 

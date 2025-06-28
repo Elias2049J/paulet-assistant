@@ -9,27 +9,27 @@ class CacheInterface(ABC):
     """
 
     @abstractmethod
-    def get(self, usuario: str, ciclo: str) -> str:
+    def get(self, usuario: str) -> str:
         """Obtiene un valor del caché"""
         pass
 
     @abstractmethod
-    def set(self, usuario: str, ciclo: str, value: str, ttl: int):
+    def set(self, usuario: str, value: str, ttl: int):
         """Establece un valor en el caché con TTL"""
         pass
 
     @abstractmethod
-    def delete(self, usuario: str, ciclo: str) -> bool:
+    def delete(self, usuario: str) -> bool:
         """Elimina una entrada del caché"""
         pass
 
     @abstractmethod
-    def exists(self, usuario: str, ciclo: str) -> bool:
+    def exists(self, usuario: str) -> bool:
         """Verifica si existe una entrada en el caché"""
         pass
 
     @abstractmethod
-    def get_ttl(self, usuario: str, ciclo: str) -> int:
+    def get_ttl(self, usuario: str) -> int:
         """Obtiene el TTL de una entrada"""
         pass
 

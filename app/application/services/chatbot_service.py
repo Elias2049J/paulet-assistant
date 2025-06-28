@@ -1,17 +1,18 @@
 import logging
 from typing import Dict, Any, Optional, List, Tuple
 from app.application.services.conversation_state_service import ConversationStateService
+from app.application.services.menu_service import MenuService
 from app.domain.entities.menu.menu_item import MenuItem, MenuOption
 
 logger = logging.getLogger(__name__)
 
 
 class ChatbotService:
-
     def __init__(self, menus: Dict[str, MenuItem], use_cases: Dict[str, Any]):
         self.menus = menus
         self.use_cases = use_cases
         self.state_service = ConversationStateService()
+        self.menu_service = MenuService(menus, self.state_service)
         self._usuarios_iniciados = set()
         self._sesiones_con_scraping_realizado = set()  # Controla si ya se hizo scraping en esta sesión
 
@@ -24,7 +25,7 @@ class ChatbotService:
             # Si es el primer mensaje, mostrar menú principal
             if usuario_id not in self._usuarios_iniciados:
                 self._usuarios_iniciados.add(usuario_id)
-                return self._mostrar_menu("main", usuario_id)
+                return self.menu_service.get_initial_menu(usuario_id)
 
             # Obtener menú actual
             menu_actual_id = self.state_service.obtener_menu_actual(usuario_id)
@@ -44,8 +45,8 @@ class ChatbotService:
                 # Estamos mostrando resultados de horarios, manejar opciones de navegación
                 return await self._manejar_navegacion_post_horarios(mensaje, usuario_id)
 
-            # Procesar entrada del usuario
-            respuesta, accion = self._procesar_entrada_usuario(mensaje, menu_actual, usuario_id)
+            # Usar MenuService para procesar la entrada del usuario
+            respuesta, accion = self.menu_service.process_user_input(mensaje, usuario_id)
 
             # Si hay una acción que ejecutar
             if accion:
@@ -53,7 +54,7 @@ class ChatbotService:
 
                 # Manejar navegación post-acción
                 if accion == "obtener_periodos_notas":
-                    return self._mostrar_menu("seleccionar_periodo", usuario_id)
+                    return self.menu_service.navigate_to_menu("seleccionar_periodo", usuario_id)
                 elif accion == "consultar_notas_periodo":
                     # El presentador ya incluye las opciones de navegación
                     return resultado_accion
@@ -80,13 +81,13 @@ class ChatbotService:
                 # Seleccionar otro período - volver al menú de selección de período
                 logger.info(f"Usuario {usuario_id} seleccionó ver otro período")
                 self.state_service.almacenar_datos_dinamicos(usuario_id, "mostrando_resultados", False)
-                return self._mostrar_menu("seleccionar_periodo", usuario_id)
+                return self.menu_service.navigate_to_menu("seleccionar_periodo", usuario_id)
             elif opcion == 2:
                 # Volver al menú principal
                 logger.info(f"Usuario {usuario_id} seleccionó volver al menú principal")
                 self.state_service.almacenar_datos_dinamicos(usuario_id, "mostrando_resultados", False)
                 self.state_service.establecer_menu_actual(usuario_id, "main")
-                return self._mostrar_menu("main", usuario_id)
+                return self.menu_service.navigate_to_menu("main", usuario_id)
             else:
                 return "Opción no válida. Por favor selecciona 1 para ver otro período o 2 para volver al menú principal."
 
@@ -107,7 +108,7 @@ class ChatbotService:
                 # Limpiar estado de horarios
                 self.state_service.almacenar_datos_dinamicos(usuario_id, "mostrando_horarios", False)
                 self.state_service.establecer_menu_actual(usuario_id, "main")
-                return self._mostrar_menu("main", usuario_id)
+                return self.menu_service.navigate_to_menu("main", usuario_id)
             else:
                 return "Opción no válida. Por favor selecciona 1 para volver al menú principal."
 
@@ -116,114 +117,6 @@ class ChatbotService:
         except Exception as e:
             logger.error(f"Error en navegación post-horarios: {e}")
             return "Error procesando la selección. Intenta nuevamente."
-
-    def _mostrar_menu(self, menu_id: str, usuario_id: str) -> str:
-        """Muestra un menú específico al usuario"""
-        menu = self.menus.get(menu_id)
-        if not menu:
-            return "Error: menú no encontrado"
-
-        self.state_service.establecer_menu_actual(usuario_id, menu_id)
-
-        # Si es dinámico, obtener datos y renderizar opciones dinámicas
-        if menu.is_dynamic and menu.dynamic_data_key:
-            return self._renderizar_menu_dinamico(menu, usuario_id)
-
-        # Renderizar menú estático
-        lines = [menu.message]
-        for option in menu.options:
-            lines.append(f"{option.key}. {option.label}")
-
-        return "\n".join(lines)
-
-    def _renderizar_menu_dinamico(self, menu: MenuItem, usuario_id: str) -> str:
-        """Renderiza un menú con opciones dinámicas"""
-        lines = [menu.message]
-
-        # Obtener datos dinámicos
-        dynamic_data = self.state_service.obtener_datos_dinamicos(usuario_id, menu.dynamic_data_key)
-        if not dynamic_data:
-            dynamic_data = []
-
-        # Agregar opciones dinámicas
-        for i, data_item in enumerate(dynamic_data, 1):
-            lines.append(f"{i}. Período {data_item}")
-
-        # Agregar opciones fijas
-        for option in menu.options:
-            option_number = len(dynamic_data) + int(option.key)
-            lines.append(f"{option_number}. {option.label}")
-
-        return "\n".join(lines)
-
-    def _procesar_entrada_usuario(self, mensaje: str, menu: MenuItem, usuario_id: str) -> Tuple[str, Optional[str]]:
-        """Procesa la entrada del usuario y retorna (respuesta, acción_a_ejecutar)"""
-        # Si es un menú dinámico, manejar opciones dinámicas
-        if menu.is_dynamic:
-            return self._manejar_menu_dinamico(menu, mensaje, usuario_id)
-
-        # Buscar la opción seleccionada en menú estático
-        selected_option = self._encontrar_opcion_por_clave(menu, mensaje)
-        if not selected_option:
-            return "Opción no válida. Por favor selecciona una opción correcta.", None
-
-        # Si la opción tiene una acción, ejecutarla
-        if selected_option.action:
-            return f"Ejecutando acción: {selected_option.action}", selected_option.action
-
-        # Si la opción navega a otro menú
-        if selected_option.target_menu_id:
-            return self._mostrar_menu(selected_option.target_menu_id, usuario_id), None
-
-        return "Configuración de menú incompleta", None
-
-    def _manejar_menu_dinamico(self, menu: MenuItem, mensaje: str, usuario_id: str) -> Tuple[str, Optional[str]]:
-        """Maneja la selección en menús dinámicos"""
-        try:
-            option_number = int(mensaje)
-            dynamic_data = self.state_service.obtener_datos_dinamicos(usuario_id, menu.dynamic_data_key) or []
-
-            logger.info(f"Procesando opción dinámica {option_number} con {len(dynamic_data)} elementos disponibles")
-
-            # Si es una opción dinámica (períodos)
-            if 1 <= option_number <= len(dynamic_data):
-                selected_data = dynamic_data[option_number - 1]
-                self.state_service.almacenar_datos_dinamicos(usuario_id, "seleccion_actual", selected_data)
-
-                logger.info(f"Usuario {usuario_id} seleccionó período: {selected_data}")
-
-                # Si hay una acción definida para el menú dinámico, ejecutarla
-                if menu.action:
-                    logger.info(f"Ejecutando acción del menú dinámico: {menu.action}")
-                    return f"Ejecutando acción: {menu.action}", menu.action
-
-                return f"Seleccionaste: Período {selected_data}", None
-
-            # Si es una opción fija (volver al menú principal)
-            adjusted_key = str(option_number - len(dynamic_data))
-            fixed_option = self._encontrar_opcion_por_clave(menu, adjusted_key)
-            if fixed_option:
-                logger.info(f"Usuario seleccionó opción fija: {fixed_option.label}")
-                if fixed_option.target_menu_id:
-                    return self._mostrar_menu(fixed_option.target_menu_id, usuario_id), None
-
-                if fixed_option.action:
-                    return f"Ejecutando acción: {fixed_option.action}", fixed_option.action
-
-            return "Opción no válida", None
-
-        except ValueError:
-            return "Por favor ingresa un número válido", None
-        except Exception as e:
-            logger.error(f"Error en manejo de menú dinámico: {e}")
-            return "Error procesando la selección. Intenta nuevamente.", None
-
-    def _encontrar_opcion_por_clave(self, menu: MenuItem, key: str) -> Optional[MenuOption]:
-        """Encuentra una opción por su clave"""
-        for option in menu.options:
-            if option.key == key:
-                return option
-        return None
 
     async def _ejecutar_accion(self, accion: str, usuario_id: str) -> str:
         """Ejecuta una acción específica"""
@@ -256,7 +149,7 @@ class ChatbotService:
             periodos_almacenados = self.state_service.obtener_datos_dinamicos(usuario_id, "periodos_obtenidos")
             if not primer_consulta_sesion and periodos_almacenados:
                 logger.info(f"[CONSULTA NOTAS] Usando períodos ya almacenados en estado: {periodos_almacenados}")
-                return self._mostrar_menu("seleccionar_periodo", usuario_id)
+                return self.menu_service.navigate_to_menu("seleccionar_periodo", usuario_id)
 
             # Pasar el indicador de forzar scraping al caso de uso
             logger.info("[CONSULTA NOTAS] Ejecutando obtener_solo_periodos()")
@@ -278,7 +171,7 @@ class ChatbotService:
             logger.info(f"[CONSULTA NOTAS] {len(periodos)} períodos almacenados en estado para usuario: {usuario_id}")
 
             # Retornar directamente el menú de selección de período
-            return self._mostrar_menu("seleccionar_periodo", usuario_id)
+            return self.menu_service.navigate_to_menu("seleccionar_periodo", usuario_id)
 
         except Exception as e:
             logger.error(f"[CONSULTA NOTAS] Error obteniendo períodos: {e}", exc_info=True)

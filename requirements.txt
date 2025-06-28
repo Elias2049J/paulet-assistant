@@ -17,3 +17,4 @@ playwright~=1.52.0
 python-dotenv~=1.1.0
 aioredis~=2.0.1
 psutil~=7.0.0
+cryptography~=45.0.4

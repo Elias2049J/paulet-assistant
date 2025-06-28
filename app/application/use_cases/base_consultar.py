@@ -9,14 +9,13 @@ logger = logging.getLogger(__name__)
 
 
 class ConsultaUseCase(ABC):
-    """Clase base simplificada para casos de uso de consulta"""
+    """Clase base para casos de uso de consulta"""
 
-    def __init__(self, extractor, cache, usuario, ciclo):
+    def __init__(self, extractor, cache, usuario):
         self.extractor = extractor  # Instancia del extractor de datos
         self.cache = cache          # Instancia de la caché
         self.usuario = usuario      # Usuario actual
-        self.ciclo = ciclo          # Ciclo académico actual
-        self.cache_key = f"{self.__class__.__name__}:{usuario}:{ciclo}"
+        self.cache_key = f"{self.__class__.__name__}:{usuario}"
 
     def obtener_de_cache(self, clave_adicional: str = None) -> Optional[str]:
         """Obtiene resultado desde caché con manejo de errores"""
@@ -26,7 +25,7 @@ class ConsultaUseCase(ABC):
                 clave = f"{clave}:{clave_adicional}"
 
             logger.debug(f"Intentando obtener datos de caché con clave: {clave}")
-            datos = self.cache.get(self.usuario, self.ciclo)
+            datos = self.cache.get(self.usuario)
 
             if datos:
                 logger.info(f"Datos encontrados en caché para {clave}")
@@ -70,7 +69,7 @@ class ConsultaUseCase(ABC):
                 datos_cache = json.dumps(resultado)
 
             logger.info(f"Guardando datos en caché con clave: {clave}, TTL: {ttl}s")
-            self.cache.set(self.usuario, self.ciclo, datos_cache, ttl)
+            self.cache.set(self.usuario, datos_cache, ttl)
             return True
         except Exception as e:
             logger.error(f"Error guardando datos en caché: {e}")

@@ -1,10 +1,10 @@
 class PeriodosCalificacionPresenter:
     @staticmethod
-    def formatear_respuesta(periodos, ciclo, desde_cache=False):
+    def formatear_respuesta(periodos, desde_cache=False):
         origen = "(desde caché)" if desde_cache else "(desde scraping)"
 
         if not periodos:
-            return f"{origen} No se encontraron períodos disponibles para el ciclo {ciclo}."
+            return f"{origen} No se encontraron períodos disponibles."
 
         lineas = [f"{origen} Períodos disponibles para consultar notas:"]
 
@@ -14,4 +14,3 @@ class PeriodosCalificacionPresenter:
         lineas.append(f"{len(periodos) + 1}. Volver al menú principal")
 
         return "\n".join(lineas)
-

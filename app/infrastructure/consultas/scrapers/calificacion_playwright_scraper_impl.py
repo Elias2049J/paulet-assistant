@@ -3,14 +3,33 @@ from playwright.async_api import async_playwright
 from app.infrastructure.consultas.scrapers.base_web_scraper_impl import BaseWebScraperImpl
 from app.domain.entities.calificaciones.mappers import crear_calificaciones_por_periodo
 import logging
+from app.infrastructure.config.redis_client import redis_client
+from cryptography.fernet import Fernet
+import os
+from app.infrastructure.config.auth_loader import AuthLoader
 
 logger = logging.getLogger(__name__)
 
 
 class CalificacionPlaywrightScraperImpl(BaseWebScraperImpl):
+    def __init__(self, usuario, clave, redis=None):
+        super().__init__(usuario, clave)
+        self.redis = redis or redis_client()
+        FERNET_KEY = os.getenv("FERNET_KEY")
+        if not FERNET_KEY:
+            raise RuntimeError("FERNET_KEY debe estar definida en el entorno para encriptar credenciales.")
+        self.fernet = Fernet(FERNET_KEY)
+
     async def scrap(self) -> Dict[str, Any]:
         """Extrae tanto períodos como calificaciones de la misma página en una sola operación"""
         logger.info("Iniciando scraping de notas y períodos")
+
+        # Recuperar usuario y contraseña descifrados desde Redis usando AuthLoader
+        try:
+            self.usuario, self.clave = AuthLoader.get_credentials(self.redis)
+        except Exception as e:
+            logger.error(f"No se pudieron obtener credenciales: {e}")
+            return {"periodos": [], "calificaciones": {}}
 
         try:
             async with async_playwright() as pw:
@@ -248,9 +267,7 @@ class CalificacionPlaywrightScraperImpl(BaseWebScraperImpl):
                     option_text = await option.inner_text()
                     option_value = await option.get_attribute("value")
 
-                    # Filtrar la opción "--Todos--"
                     if option_value and option_value.strip() != "":
-                        # Extraer período del texto (ej: "202433 - Campus Virtual" -> "202433")
                         periodo = option_text.split(" - ")[0].strip()
                         if periodo and periodo not in periodos and periodo != "--Todos--":
                             periodos.append(periodo)

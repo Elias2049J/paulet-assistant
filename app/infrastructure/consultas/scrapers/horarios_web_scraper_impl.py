@@ -1,14 +1,27 @@
 from playwright.async_api import async_playwright
 from app.infrastructure.consultas.scrapers.base_web_scraper_impl import BaseWebScraperImpl
 from app.domain.entities.horarios.mappers import dict_to_horario_diario
+from app.infrastructure.config.redis_client import redis_client
+from app.infrastructure.config.auth_loader import AuthLoader
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 class HorariosWebScraperImpl(BaseWebScraperImpl):
+    def __init__(self, usuario, clave, redis=None):
+        super().__init__(usuario, clave)
+        self.redis = redis or redis_client()
+
     async def scrap(self) -> dict:
         logger.info("Iniciando scraping de horarios")
+
+        # Recuperar usuario y contraseña descifrados desde Redis usando AuthLoader
+        try:
+            self.usuario, self.clave = AuthLoader.get_credentials(self.redis)
+        except Exception as e:
+            logger.error(f"No se pudieron obtener credenciales: {e}")
+            return {}
 
         async with async_playwright() as pw:
             logger.info("Lanzando navegador Chromium")
@@ -48,7 +61,7 @@ class HorariosWebScraperImpl(BaseWebScraperImpl):
             logger.info("Login completado correctamente, página cargada")
 
             # Navegar a la página de horarios
-            horarios_url = "https://intranet.cibertec.edu.pe/Redirecciona.asp?iTipo=1&inum=3&nomasp=SesionNet.asp?WPAG1=gestudiante/GESEST000.aspx?Destino=GESEST003.aspx"
+            horarios_url = "https://intranet.cibertec.edu.pe/Redirecciona.asp?iTipo=1&inum=1&nomasp=SesionNet.asp?WPAG1=gestudiante/GESEST000.aspx?Destino=GESEST001.aspx"
             logger.info(f"Navegando a página de horarios: {horarios_url}")
             await pagina.goto(horarios_url, timeout=30000)
             logger.info(f"URL actual después de navegación: {pagina.url}")

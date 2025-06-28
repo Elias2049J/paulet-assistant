@@ -67,41 +67,22 @@ try:
     # Implementaciones de caché
     cache_impl = RedisCacheImpl(redis)
 
-    # Obtener credenciales de variables de entorno (obligatorias)
-    usuario = os.getenv("USUARIO")
-    password = os.getenv("PASSWORD")
+    # Inicializar scrapers y casos de uso con None
+    notas_scraper = CalificacionPlaywrightScraperImpl(None, None, redis)
+    horarios_scraper = HorariosWebScraperImpl(None, None, redis)
 
-    if not usuario or not password:
-        logger.error("Error: las credenciales USUARIO y PASSWORD deben estar definidas en el archivo .env")
-        raise ValueError("faltan credenciales en el .env")
+    consultar_notas_uc = ConsultarNotasUseCase(notas_scraper, cache_impl, None)
+    consultar_horarios_uc = ConsultarHorariosUseCase(horarios_scraper, cache_impl, None)
 
-    ciclo = "2025-1"
-
-    # Scrapers
-    notas_scraper = CalificacionPlaywrightScraperImpl(usuario, password, ciclo)
-    horarios_scraper = HorariosWebScraperImpl(usuario, password, ciclo)
-
-    # Casos de uso
-    consultar_notas_uc = ConsultarNotasUseCase(notas_scraper, cache_impl, usuario, ciclo)
-    consultar_horarios_uc = ConsultarHorariosUseCase(horarios_scraper, cache_impl, usuario, ciclo)
-
-    # Diccionario de casos de uso
     use_cases = {
         "consultar_notas": consultar_notas_uc,
         "consultar_horarios": consultar_horarios_uc
     }
 
-    # Cargar configuración de menús
     menus = MenuLoader.load_from_file("menus_config.json")
-
-    # Servicios (usando el nuevo servicio unificado)
     chatbot_service = ChatbotService(menus, use_cases)
-
-    # Presenter
     chatbot_presenter = ChatbotPresenter(chatbot_service)
-
-    # Registrar rutas
-    chatbot_router = get_router(chatbot_presenter)
+    chatbot_router = get_router(chatbot_presenter, redis=redis)
     cache_router = get_cache_router(cache_impl)
 
     app.include_router(chatbot_router, tags=["Chatbot"])
@@ -140,7 +121,8 @@ async def health_check():
             "configuration": {
                 "redis_host": redis_config.host,
                 "redis_port": redis_config.port,
-                "usuario": usuario,
+                # No mostrar usuario si no está definido
+                "usuario": redis.get("USUARIO") or None,
                 "arquitectura": "Chatbot unificado con menús simplificados"
             }
         }

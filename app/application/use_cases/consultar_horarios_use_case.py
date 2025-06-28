@@ -27,9 +27,7 @@ class ConsultarHorariosUseCase(ConsultaUseCase):
                     # Filtrar solo cursos válidos
                     cursos_validos = [
                         curso for curso in obj_horario.cursos
-                        if curso.curso and
-                           not curso.curso.isdigit() and
-                           curso.curso not in ["Error: formato no válido", "periodos"]
+                        if curso.curso and not curso.curso.isdigit() and curso.curso not in ["Error: formato no válido", "periodos"]
                     ]
 
                     # Solo guardar días con cursos válidos
@@ -44,12 +42,12 @@ class ConsultarHorariosUseCase(ConsultaUseCase):
                 self.guardar_en_cache(datos_para_cache)
 
                 # Usar el presentador para formatear la respuesta
-                return HorariosPresenter.formatear_respuesta(horarios, self.ciclo, False)
+                return HorariosPresenter.formatear_respuesta(horarios, False)
             except Exception as e:
                 logger.error(f"Error procesando resultados de scraping: {e}", exc_info=True)
                 # Si falla el guardado, intentar usar la caché como respaldo
 
-        # Si el scraping falló, intentar usar caché como respaldo
+        # Si el scraping falla, usar caché como respaldo
         logger.warning("Scraping falló o no retornó datos, intentando caché como respaldo")
         datos = self.obtener_de_cache()
 
@@ -87,7 +85,7 @@ class ConsultarHorariosUseCase(ConsultaUseCase):
                 logger.info(f"Datos cargados desde caché: {len(horarios)} días, {cursos_validos} cursos válidos")
 
                 # Usar el presentador para formatear la respuesta
-                return HorariosPresenter.formatear_respuesta(horarios, self.ciclo, desde_cache)
+                return HorariosPresenter.formatear_respuesta(horarios, desde_cache)
 
             except (json.JSONDecodeError, KeyError) as e:
                 logger.warning(f"Error deserializando caché: {e}")
