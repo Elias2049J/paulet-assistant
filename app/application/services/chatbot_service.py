@@ -35,10 +35,14 @@ class ChatbotService:
                 logger.error(f"Menú no encontrado: {menu_actual_id}")
                 return "Error: menú no encontrado. Iniciando de nuevo."
 
-            # Verificar si está en pantalla de resultados de notas
+            # Verificar si está en pantalla de resultados de notas (seleccionar_periodo)
             if menu_actual_id == "seleccionar_periodo" and self.state_service.obtener_datos_dinamicos(usuario_id, "mostrando_resultados"):
                 # Estamos mostrando resultados de notas, manejar opciones de navegación post-resultados
                 return await self._manejar_navegacion_post_resultados(mensaje, usuario_id)
+
+            # Verificar si está en pantalla de resultados de notas (mostrar_notas)
+            if menu_actual_id == "mostrar_notas" and self.state_service.obtener_datos_dinamicos(usuario_id, "mostrando_resultados"):
+                return await self._manejar_navegacion_post_mostrar_notas(mensaje, usuario_id)
 
             # Verificar si está en pantalla de resultados de horarios
             if self.state_service.obtener_datos_dinamicos(usuario_id, "mostrando_horarios"):
@@ -100,6 +104,33 @@ class ChatbotService:
             return f"Por favor ingresa un número válido (1 o 2).\n\n{self.menu_service.navigate_to_menu(menu_actual_id, usuario_id)}"
         except Exception as e:
             logger.error(f"Error en navegación post-resultados: {e}")
+            return "Error procesando la selección. Intenta nuevamente."
+
+    async def _manejar_navegacion_post_mostrar_notas(self, mensaje: str, usuario_id: str) -> str:
+        """Maneja las opciones después de mostrar notas de un período (submenú mostrar_notas)"""
+        try:
+            opcion = int(mensaje)
+            if opcion == 1:
+                # Seleccionar otro período
+                logger.info(f"Usuario {usuario_id} seleccionó ver otro período desde mostrar_notas")
+                self.state_service.almacenar_datos_dinamicos(usuario_id, "mostrando_resultados", False)
+                self.state_service.establecer_menu_actual(usuario_id, "seleccionar_periodo")
+                return self.menu_service.navigate_to_menu("seleccionar_periodo", usuario_id)
+            elif opcion == 2:
+                # Volver al menú principal
+                logger.info(f"Usuario {usuario_id} seleccionó volver al menú principal desde mostrar_notas")
+                self.state_service.almacenar_datos_dinamicos(usuario_id, "mostrando_resultados", False)
+                self.state_service.establecer_menu_actual(usuario_id, "main")
+                return self.menu_service.navigate_to_menu("main", usuario_id)
+            else:
+                menu_actual_id = self.state_service.obtener_menu_actual(usuario_id)
+                mensaje_error = "Opción no válida. Por favor selecciona 1 para seleccionar otro período o 2 para volver al menú principal."
+                return f"{mensaje_error}\n\n{self.menu_service.navigate_to_menu(menu_actual_id, usuario_id)}"
+        except ValueError:
+            menu_actual_id = self.state_service.obtener_menu_actual(usuario_id)
+            return f"Por favor ingresa un número válido (1 o 2).\n\n{self.menu_service.navigate_to_menu(menu_actual_id, usuario_id)}"
+        except Exception as e:
+            logger.error(f"Error en navegación post-mostrar_notas: {e}")
             return "Error procesando la selección. Intenta nuevamente."
 
     async def _manejar_navegacion_post_horarios(self, mensaje: str, usuario_id: str) -> str:
