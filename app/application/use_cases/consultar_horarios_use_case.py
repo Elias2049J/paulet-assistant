@@ -110,3 +110,4 @@ class ConsultarHorariosUseCase(ConsultaUseCase):
                 logger.error(f"Error procesando resultados de scraping: {e}", exc_info=True)
         logger.error("No se pudieron obtener datos ni por caché ni por scraping")
         return "Error obteniendo horarios. Por favor intenta nuevamente."
+
