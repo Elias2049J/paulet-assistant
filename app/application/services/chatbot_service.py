@@ -17,7 +17,7 @@ class ChatbotService:
         self._sesiones_con_scraping_realizado = set()  # Controla si ya se hizo scraping en esta sesión
 
     async def procesar_consulta(self, mensaje: str, usuario_id: str = "default") -> str:
-        """Procesa una consulta del usuario de forma unificada"""
+        """Procesa una consulta del usuario"""
         try:
             # Inicializar estado del usuario
             self.state_service.inicializar_usuario(usuario_id)
@@ -118,6 +118,7 @@ class ChatbotService:
             logger.error(f"Error en navegación post-horarios: {e}")
             return "Error procesando la selección. Intenta nuevamente."
 
+    # Centraliza la logica de ejecucion de acciones
     async def _ejecutar_accion(self, accion: str, usuario_id: str) -> str:
         """Ejecuta una acción específica"""
         logger.info(f"Ejecutando acción: {accion} para usuario: {usuario_id}")

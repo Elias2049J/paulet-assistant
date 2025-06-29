@@ -1,11 +1,18 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class CalificacionPresenter:
     @staticmethod
     def formatear_respuesta(periodos, desde_cache=False):
         origen = "(desde caché)" if desde_cache else "(desde scraping)"
-        if not periodos:
-            return f"{origen} No se encontraron notas."
+        logger.info(f"Origen de datos de calificaciones: {origen}")
 
-        lineas = [f"{origen} Notas:"]
+        if not periodos:
+            return f"No se encontraron notas."
+
+        lineas = [f"Notas:"]
 
         for periodo_key, periodo_obj in periodos.items():
             lineas.append(f"\n📅 Período {periodo_obj.periodo}:")
@@ -15,7 +22,6 @@ class CalificacionPresenter:
                 faltas_texto = f"{cal.faltas}/{cal.max_faltas}" if cal.max_faltas != "" else "N/A"
                 lineas.append(f"  • {cal.curso}: {pf_texto} (faltas: {faltas_texto})")
 
-        # No añadir opciones de navegación aquí, solo mostrar los datos
         return "\n".join(lineas)
 
     @staticmethod

@@ -1,18 +1,24 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class HorariosPresenter:
     @staticmethod
     def formatear_respuesta(horarios, desde_cache=False):
         origen = "(desde caché)" if desde_cache else "(desde scraping)"
+        logger.info(f"Origen de datos de horarios: {origen}")
 
         if isinstance(horarios, str):
             return f"{origen} {horarios}"
 
-        resultado = [f"{origen} Horarios:"]
+        resultado = [f"Horarios:"]
 
         # Verificar si hay horarios con cursos reales
         total_cursos = 0
         cursos_validos = 0
 
-        # Contar solo cursos válidos (con nombre real de curso)
+        # Contar solo cursos válidos con nombre del curso
         for dia, horario_diario in horarios.items():
             for curso in horario_diario.cursos:
                 total_cursos += 1
@@ -21,9 +27,9 @@ class HorariosPresenter:
                     curso.curso not in ["Error: formato no válido", "periodos"]):
                     cursos_validos += 1
 
-        # Si no hay cursos reales en total, mostrar un mensaje amigable
+        # Si no hay cursos reales en total, mostrar un mensaje
         if cursos_validos == 0:
-            return f"{origen} No se encontraron horarios disponibles. Por favor intenta más tarde."
+            return f"No se encontraron horarios disponibles. Por favor intenta más tarde."
 
         # Mostrar solo días con cursos válidos
         for dia, horario_diario in horarios.items():

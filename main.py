@@ -101,7 +101,7 @@ async def root():
     return {
         "message": "Paulet Assistant API está funcionando",
         "version": "1.0.0",
-        "arquitectura": "Servicio chatbot unificado con sistema de menús simplificado",
+        "arquitectura": "Servicio chatbot con sistema de menús",
         "endpoints": {
             "chat": "/paulet/chat",
             "cache_health": "/admin/cache/health",
@@ -121,9 +121,8 @@ async def health_check():
             "configuration": {
                 "redis_host": redis_config.host,
                 "redis_port": redis_config.port,
-                # No mostrar usuario si no está definido
                 "usuario": redis.get("USUARIO") or None,
-                "arquitectura": "Chatbot unificado con menús simplificados"
+                "arquitectura": "Chatbot con menús"
             }
         }
     except Exception as e:
