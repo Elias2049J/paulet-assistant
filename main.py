@@ -22,23 +22,6 @@ from app.infrastructure.config.redis_config import redis_config
 from dotenv import load_dotenv
 
 
-# Monitoreo de memoria
-def monitor_memory():
-    while True:
-        SystemMonitor.log_system_resources()
-        time.sleep(10)
-
-
-threading.Thread(target=monitor_memory, daemon=True).start()
-
-# Cargar variables de entorno
-load_dotenv()
-
-# Configurar logging en terminal
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Iniciando aplicación Paulet Assistant")
@@ -57,6 +40,23 @@ app = FastAPI(
 
 # Configurar CORS
 configure_cors(app)
+
+
+# Monitoreo de memoria
+def monitor_memory():
+    while True:
+        SystemMonitor.log_system_resources()
+        time.sleep(10)
+
+
+threading.Thread(target=monitor_memory, daemon=True).start()
+
+# Cargar variables de entorno
+load_dotenv()
+
+# Configurar logging en terminal
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Configurar dependencias
 try:
