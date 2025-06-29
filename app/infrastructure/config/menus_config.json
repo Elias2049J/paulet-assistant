@@ -49,5 +49,18 @@
         "target_menu_id": "main"
       }
     ]
+  },
+  "mostrar_horarios": {
+    "id": "mostrar_horarios",
+    "title": "Horario Semanal",
+    "message": "Aquí tienes tu horario semanal:",
+    "is_dynamic": false,
+    "options": [
+      {
+        "key": "1",
+        "label": "Volver al menú principal",
+        "target_menu_id": "main"
+      }
+    ]
   }
 }

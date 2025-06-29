@@ -14,7 +14,6 @@ class ConsultarNotasUseCase(ConsultaUseCase):
 
         # Primero intenta obtener de caché
         datos = self.obtener_de_cache()
-        desde_cache = False
 
         if datos:
             logger.info("Datos encontrados en caché, deserializando")
