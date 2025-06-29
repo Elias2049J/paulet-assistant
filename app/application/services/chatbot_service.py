@@ -1,8 +1,8 @@
 import logging
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Dict, Any
 from app.application.services.conversation_state_service import ConversationStateService
 from app.application.services.menu_service import MenuService
-from app.domain.entities.menu.menu_item import MenuItem, MenuOption
+from app.domain.entities.menu.menu_item import MenuItem
 
 logger = logging.getLogger(__name__)
 
@@ -215,6 +215,7 @@ class ChatbotService:
 
                 # Marcar que estamos mostrando resultados
                 self.state_service.almacenar_datos_dinamicos(usuario_id, "mostrando_resultados", True)
+                self.state_service.establecer_menu_actual(usuario_id, "mostrar_notas")
                 logger.info(f"[CONSULTA NOTAS] Mostrando {len(periodo_obj.calificaciones)} calificaciones al usuario")
                 return respuesta
             else:
