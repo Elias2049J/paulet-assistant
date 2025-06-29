@@ -61,6 +61,7 @@ class ChatbotService:
                 elif accion == "consultar_horarios":
                     # Marcar que estamos mostrando horarios para manejar navegación posterior
                     self.state_service.almacenar_datos_dinamicos(usuario_id, "mostrando_horarios", True)
+                    self.state_service.establecer_menu_actual(usuario_id, "mostrar_horarios")
                     # El presentador ya incluye las opciones de navegación
                     return resultado_accion
                 else:
@@ -235,8 +236,18 @@ class ChatbotService:
                 logger.error("[CONSULTA HORARIOS] Caso de uso consultar_horarios no disponible")
                 return "Error: Servicio de consulta de horarios no disponible temporalmente."
 
+            # Verificar si es la primera vez que se consulta horarios en esta sesión
+            primer_consulta_sesion = f"{usuario_id}_horarios" not in self._sesiones_con_scraping_realizado
+            logger.info(f"[CONSULTA HORARIOS] ¿Primera consulta de horarios en la sesión? {primer_consulta_sesion}")
+
             logger.info("[CONSULTA HORARIOS] Ejecutando caso de uso")
-            resultado = await use_case.ejecutar_consulta()
+            resultado = await use_case.ejecutar_consulta(forzar_scraping=primer_consulta_sesion)
+
+            # Marcar que ya se realizó scraping para esta sesión
+            if primer_consulta_sesion:
+                self._sesiones_con_scraping_realizado.add(f"{usuario_id}_horarios")
+                logger.info(f"[CONSULTA HORARIOS] Marcando que scraping ha sido realizado para sesión de {usuario_id}")
+
             logger.info("[CONSULTA HORARIOS] Consulta completada exitosamente")
             return resultado
 

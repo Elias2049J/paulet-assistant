@@ -93,3 +93,4 @@ class ConsultarHorariosUseCase(ConsultaUseCase):
         # Si no hay datos ni en scraping ni en caché
         logger.error("No se pudieron obtener datos ni por scraping ni por caché")
         return "Error obteniendo horarios. Por favor intenta nuevamente."
+
