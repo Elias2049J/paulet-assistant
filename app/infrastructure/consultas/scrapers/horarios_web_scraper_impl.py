@@ -61,7 +61,7 @@ class HorariosWebScraperImpl(BaseWebScraperImpl):
             logger.info("Login completado correctamente, página cargada")
 
             # Navegar a la página de horarios
-            horarios_url = "https://intranet.cibertec.edu.pe/Redirecciona.asp?iTipo=1&inum=1&nomasp=SesionNet.asp?WPAG1=gestudiante/GESEST000.aspx?Destino=GESEST001.aspx"
+            horarios_url = "https://intranet.cibertec.edu.pe/Programas/SesionNet.asp?WPAG1=gestudiante/GESEST000.aspx?Destino=GESEST003.aspx"
             logger.info(f"Navegando a página de horarios: {horarios_url}")
             await pagina.goto(horarios_url, timeout=30000)
             logger.info(f"URL actual después de navegación: {pagina.url}")
