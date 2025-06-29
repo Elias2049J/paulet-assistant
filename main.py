@@ -79,7 +79,7 @@ try:
         "consultar_horarios": consultar_horarios_uc
     }
 
-    menus = MenuLoader.load_from_file("menus_config.json")
+    menus = MenuLoader.load_from_file("app/infrastructure/config/menus_config.json")
     chatbot_service = ChatbotService(menus, use_cases)
     chatbot_presenter = ChatbotPresenter(chatbot_service)
     chatbot_router = get_router(chatbot_presenter, redis=redis)
