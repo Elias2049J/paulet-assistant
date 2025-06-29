@@ -81,6 +81,7 @@ class ChatbotService:
                 # Seleccionar otro período - volver al menú de selección de período
                 logger.info(f"Usuario {usuario_id} seleccionó ver otro período")
                 self.state_service.almacenar_datos_dinamicos(usuario_id, "mostrando_resultados", False)
+                self.state_service.establecer_menu_actual(usuario_id, "seleccionar_periodo")
                 return self.menu_service.navigate_to_menu("seleccionar_periodo", usuario_id)
             elif opcion == 2:
                 # Volver al menú principal
@@ -89,10 +90,13 @@ class ChatbotService:
                 self.state_service.establecer_menu_actual(usuario_id, "main")
                 return self.menu_service.navigate_to_menu("main", usuario_id)
             else:
-                return "Opción no válida. Por favor selecciona 1 para ver otro período o 2 para volver al menú principal."
+                menu_actual_id = self.state_service.obtener_menu_actual(usuario_id)
+                mensaje_error = "Opción no válida. Por favor selecciona 1 para ver otro período o 2 para volver al menú principal."
+                return f"{mensaje_error}\n\n{self.menu_service.navigate_to_menu(menu_actual_id, usuario_id)}"
 
         except ValueError:
-            return "Por favor ingresa un número válido (1 o 2)."
+            menu_actual_id = self.state_service.obtener_menu_actual(usuario_id)
+            return f"Por favor ingresa un número válido (1 o 2).\n\n{self.menu_service.navigate_to_menu(menu_actual_id, usuario_id)}"
         except Exception as e:
             logger.error(f"Error en navegación post-resultados: {e}")
             return "Error procesando la selección. Intenta nuevamente."
@@ -110,10 +114,13 @@ class ChatbotService:
                 self.state_service.establecer_menu_actual(usuario_id, "main")
                 return self.menu_service.navigate_to_menu("main", usuario_id)
             else:
-                return "Opción no válida. Por favor selecciona 1 para volver al menú principal."
+                menu_actual_id = self.state_service.obtener_menu_actual(usuario_id)
+                mensaje_error = "Opción no válida. Por favor selecciona 1 para volver al menú principal."
+                return f"{mensaje_error}\n\n{self.menu_service.navigate_to_menu(menu_actual_id, usuario_id)}"
 
         except ValueError:
-            return "Por favor ingresa un número válido."
+            menu_actual_id = self.state_service.obtener_menu_actual(usuario_id)
+            return f"Por favor ingresa un número válido.\n\n{self.menu_service.navigate_to_menu(menu_actual_id, usuario_id)}"
         except Exception as e:
             logger.error(f"Error en navegación post-horarios: {e}")
             return "Error procesando la selección. Intenta nuevamente."
